@@ -22,12 +22,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize.Inclusion;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
+import com.google.common.base.Predicate;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.collect.FluentIterable.from;
 import static java.net.HttpURLConnection.*;
 import static javax.xml.bind.DatatypeConverter.parseBase64Binary;
 import static javax.xml.bind.DatatypeConverter.printBase64Binary;
@@ -48,7 +50,7 @@ public class ResponseDefinition {
 	
 	private boolean wasConfigured = true;
 	private Request originalRequest;
-	private List<String> transformers;
+	private List<Transformer<?>> transformers;
 
 	public static ResponseDefinition copyOf(ResponseDefinition original) {
 	    ResponseDefinition newResponseDef = new ResponseDefinition();
@@ -249,16 +251,25 @@ public class ResponseDefinition {
 		this.fault = fault;
 	}
 
-	public List<String> getTransformers() {
+	public List<Transformer<?>> getTransformers() {
 		return transformers;
 	}
 
-	public void setTransformers(List<String> transformers) {
+	public void setTransformers(List<Transformer<?>> transformers) {
 		this.transformers = transformers;
 	}
 
-	public boolean hasTransformer(ResponseTransformer transformer) {
-		return transformers != null && transformers.contains(transformer.name());
+	public boolean hasTransformer(final ResponseTransformer transformer) {
+		return transformers != null && from(transformers).firstMatch(matchesName(transformer)).isPresent();
+	}
+
+	private static Predicate<Transformer<?>> matchesName(final ResponseTransformer transformer) {
+		return new Predicate<Transformer<?>>() {
+			@Override
+			public boolean apply(Transformer<?> input) {
+				return input.getName().equals(transformer.name());
+			}
+		};
 	}
 
 	@Override

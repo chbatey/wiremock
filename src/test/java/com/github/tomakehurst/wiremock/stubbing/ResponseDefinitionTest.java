@@ -15,10 +15,11 @@
  */
 package com.github.tomakehurst.wiremock.stubbing;
 
+import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.Json;
-import com.github.tomakehurst.wiremock.http.Fault;
-import com.github.tomakehurst.wiremock.http.HttpHeaders;
-import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
+import com.github.tomakehurst.wiremock.http.*;
+import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import static com.github.tomakehurst.wiremock.http.HttpHeader.httpHeader;
@@ -122,4 +123,33 @@ public class ResponseDefinitionTest {
         assertTrue(responseDefinition.specifiesBodyContent());
     }
 
+    @Test
+    public void matchesTransformerOnName() {
+        ResponseDefinition responseDefinition = new ResponseDefinition();
+        responseDefinition.setBodyFileName("my-file");
+        responseDefinition.setBody("hello");
+        responseDefinition.setTransformers(Lists.<Transformer<?>>newArrayList(new Transformer<String>("TestResponseTransformer")));
+
+        assertTrue("Expected to have transformer", responseDefinition.hasTransformer(new TestResponseTransformer("TestResponseTransformer")));
+        assertFalse("Not expected to have transformer", responseDefinition.hasTransformer(new TestResponseTransformer("Not a real one!")));
+    }
+
+    static class TestResponseTransformer extends ResponseTransformer {
+
+        private final String name;
+
+        public TestResponseTransformer(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public ResponseDefinition transform(Request request, ResponseDefinition responseDefinition, FileSource files) {
+            return responseDefinition;
+        }
+
+        @Override
+        public String name() {
+            return this.name;
+        }
+    }
 }

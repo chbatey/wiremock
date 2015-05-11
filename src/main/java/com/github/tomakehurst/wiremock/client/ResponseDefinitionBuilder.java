@@ -16,10 +16,9 @@
 package com.github.tomakehurst.wiremock.client;
 
 import com.github.tomakehurst.wiremock.common.Json;
-import com.github.tomakehurst.wiremock.http.Fault;
-import com.github.tomakehurst.wiremock.http.HttpHeader;
-import com.github.tomakehurst.wiremock.http.HttpHeaders;
-import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+import com.github.tomakehurst.wiremock.http.*;
+import com.google.common.base.Function;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
 import java.nio.charset.Charset;
@@ -40,7 +39,7 @@ public class ResponseDefinitionBuilder {
 	protected Integer fixedDelayMilliseconds;
 	protected String proxyBaseUrl;
 	protected Fault fault;
-	protected List<String> responseTransformerNames;
+	protected List<Transformer<?>> responseTransformerNames;
 
 	public static ResponseDefinitionBuilder like(ResponseDefinition responseDefinition) {
 		ResponseDefinitionBuilder builder = new ResponseDefinitionBuilder();
@@ -103,7 +102,13 @@ public class ResponseDefinitionBuilder {
     }
 
 	public ResponseDefinitionBuilder withTransformers(String... responseTransformerNames) {
-		this.responseTransformerNames = asList(responseTransformerNames);
+		this.responseTransformerNames = FluentIterable.from(asList(responseTransformerNames))
+		.transform(new Function<String, Transformer<?>>() {
+			@Override
+			public Transformer<Void> apply(String input) {
+				return new Transformer<Void>(input);
+			}
+		}).toList();
 		return this;
 	}
 
